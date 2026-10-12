@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
 <title>Deep Thakur</title>
 <meta name="description" content="Deep Thakur, Integrated Ph.D. student in analytic number theory at The Institute of Mathematical Sciences, Chennai.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Ctext%20x%3D%2232%22%20y%3D%2250%22%20font-size%3D%2252%22%20text-anchor%3D%22middle%22%20font-family%3D%22Georgia%2C%20serif%22%20fill%3D%22%232F55A4%22%3E%CE%B6%3C%2Ftext%3E%3C%2Fsvg%3E">
@@ -170,6 +171,7 @@ A PDF copy of my CV is [here](CV.pdf).
   --font-size: 1.25rem; --line: 1.6;
   --measure: 42rem; --page: 60rem; --gutter: 1.5rem;
   --ed-w: clamp(360px, 38vw, 600px);
+  color-scheme: light dark;   /* tells phone browsers to use this dark theme instead of repainting the page */
   box-sizing: border-box;
   padding-top: env(safe-area-inset-top, 0px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -184,6 +186,12 @@ A PDF copy of my CV is [here](CV.pdf).
   --bg: #111722; --ink: #E4E8EE; --muted: #98A1AF; --rule: #2A3342;
   --accent: #8AA9EA; --accent-soft: rgba(138, 169, 234, .12);
 }
+
+/* Browsers with their own dark mode must not repaint the page: when the light theme is showing,
+   "only light" forbids it; when the visitor prefers dark, the site's own dark theme is used. */
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) { color-scheme: only light; } }
+:root[data-theme="dark"] { color-scheme: dark; }
+:root[data-theme="light"] { color-scheme: only light; }
 
 *, *::before, *::after { box-sizing: inherit; }
 html { scroll-padding-top: env(safe-area-inset-top, 0px); -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
@@ -209,6 +217,7 @@ a:hover { text-decoration-thickness: 2px; }
 .site-name a { color: inherit; text-decoration: none; }
 .site-subtitle { margin: .55rem 0 0; color: var(--muted); font-size: 1.1em; line-height: 1.4; }
 .site-subtitle a { color: inherit; }
+@media (max-width: 560px) { .site-subtitle { font-size: 1em; } }
 .site-nav ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; column-gap: 1.75rem; row-gap: .1rem; }
 .site-nav a { color: var(--muted); text-decoration: none; }
 .site-nav a:hover, .site-nav a[aria-current="page"] { color: var(--ink); }
@@ -273,7 +282,10 @@ mjx-container[display="true"] { overflow-x: auto; overflow-y: hidden; max-width:
 /* Photo beside the home page text */
 .intro { display: grid; grid-template-columns: minmax(0, var(--measure)) 11.5rem; column-gap: clamp(2rem, 5vw, 4rem); align-items: start; }
 .intro.photo-left { grid-template-columns: 11.5rem minmax(0, var(--measure)); }
-.intro.photo-left .photo { order: -1; }
+.intro > .photo { grid-column: 2; grid-row: 1; }
+.intro > .intro-text { grid-column: 1; grid-row: 1; }
+.intro.photo-left > .photo { grid-column: 1; }
+.intro.photo-left > .intro-text { grid-column: 2; }
 .intro .photo { margin-top: .4em; }
 .photo { margin: 0; }
 .photo img { display: block; width: 100%; height: auto; aspect-ratio: 1 / 1; object-fit: cover; background: var(--rule); }
@@ -283,8 +295,10 @@ mjx-container[display="true"] { overflow-x: auto; overflow-y: hidden; max-width:
 .photo-original img { aspect-ratio: auto; border-radius: 0; background: none; }
 .photo-inline { width: 11.5rem; margin: 0 0 1.25em; }
 @media (max-width: 760px) {
-  .intro, .intro.photo-left { grid-template-columns: minmax(0, 1fr); }
-  .intro .photo { order: -1; width: 8rem; margin: 0 0 1.5rem; }
+  .intro, .intro.photo-left { display: block; }
+  .intro > .photo { float: right; width: 6.5rem; margin: .3rem 0 .75rem 1.25rem; }
+  .intro.photo-left > .photo { float: left; margin: .3rem 1.25rem .75rem 0; }
+  .intro::after { content: ""; display: table; clear: both; }
 }
 
 /* Banner and the Z-function plot */
@@ -942,6 +956,7 @@ function buildDocument(o) {
     '<head>',
     '<meta charset="utf-8">',
     '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">',
+    '<meta name="color-scheme" content="light dark">',
     '<title>' + escHtml(title) + '</title>',
   ];
   if (desc) parts.push('<meta name="description" content="' + escAttr(desc) + '">');
@@ -1139,7 +1154,7 @@ function pageHtml(p, v, withTitle) {
   const s = v.s, isHome = p === v.pages[0];
   let html = renderMarkdown(p.body);
   const autoPhoto = isHome && s.photo && s.layout !== 'sidebar' && !/\{\{\s*photo\b/i.test(p.body);
-  if (autoPhoto) html = '<div class="intro photo-' + s.photoSide + '"><div class="intro-text">' + html + '</div>' + photoHtml(s) + '</div>';
+  if (autoPhoto) html = '<div class="intro photo-' + s.photoSide + '">' + photoHtml(s) + '<div class="intro-text">' + html + '</div></div>';
   const title = withTitle && !isHome ? '<h2 class="section-title">' + renderInline(p.title) + '</h2>' : '';
   return '<article class="page' + (autoPhoto ? ' has-intro' : '') + '" id="page-' + p.slug + '" data-page="' + p.index + '">' + title + html + '</article>';
 }
